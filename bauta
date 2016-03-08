@@ -17,9 +17,10 @@ SUMMARY='summary'
 TRACE='trace'
 
 function handle_event() {
-  local event_type=$1
-  local event_data=$2
-  local event="${event_type}|${event_data}|$(date +'%s')"
+  local event_type event_data event
+  event_type=$1
+  event_data=$2
+  event="${event_type}|${event_data}|$(date +'%s')"
   echo -e "${event}" >> "$test_logfile"
 
   case $event_type in
@@ -45,9 +46,10 @@ function handle_event() {
 }
 
 function display_event() {
-  local green=$(echo -e '\e[32m')
-  local red=$(echo -e '\e[31m')
-  local reset=$(echo -e '\e[39m')
+  local green red reset
+  green=$(echo -e '\e[32m')
+  red=$(echo -e '\e[31m')
+  reset=$(echo -e '\e[39m')
   echo "${1}" | sed \
     -e "s/^$OPEN|\(.*\)|.*/  \1:/" \
     -e "s/^$TEST|\(.*\)|s|.*/$green    +$reset \1/" \
@@ -86,12 +88,12 @@ function write_events_as_xml() {
 }
 
 function summarize_last_test() {
-  local test_data=$(list_all_events | sed "/^$BEGIN/q")
-  local test_name=$(sed -n "s/^$BEGIN|\(.*\)|.*/\1/p" <(echo "$test_data"))
-  local failures=$(grep -c "^$FAILURE" <(echo "$test_data"))
-  local errors=$(grep -c "^$ERROR" <(echo "$test_data"))
-  local seconds=$(grep -E "(^$BEGIN|^$END)" <(echo "$test_data") | cut -d '|' -f 3 | sort -nr | paste -sd- - | bc)
-  local status
+  local test_data test_name failures errors seconds status
+  test_data=$(list_all_events | sed "/^$BEGIN/q")
+  test_name=$(sed -n "s/^$BEGIN|\(.*\)|.*/\1/p" <(echo "$test_data"))
+  failures=$(grep -c "^$FAILURE" <(echo "$test_data"))
+  errors=$(grep -c "^$ERROR" <(echo "$test_data"))
+  seconds=$(grep -E "(^$BEGIN|^$END)" <(echo "$test_data") | cut -d '|' -f 3 | sort -nr | paste -sd- - | bc)
 
   if [[ "$errors" -gt 0 ]]; then
     status='e'
@@ -105,23 +107,25 @@ function summarize_last_test() {
 }
 
 function summarize_last_file() {
-  local file_data=$(list_all_events | sed "/^$OPEN/q")
-  local file_name=$(sed -n "s/^$OPEN|\(.*\)|.*/\1/p" <(echo "$file_data"))
-  local tests=$(grep -c "^$TEST" <(echo "$file_data"))
-  local failures=$(grep -c "^$FAILURE" <(echo "$file_data"))
-  local errors=$(grep -c "^$ERROR" <(echo "$file_data"))
-  local seconds=$(grep "^$TEST" <(echo "$file_data") | awk -F '|' '{sum+=$4} END {print sum}')
+  local file_data file_name tests failures errors seconds
+  file_data=$(list_all_events | sed "/^$OPEN/q")
+  file_name=$(sed -n "s/^$OPEN|\(.*\)|.*/\1/p" <(echo "$file_data"))
+  tests=$(grep -c "^$TEST" <(echo "$file_data"))
+  failures=$(grep -c "^$FAILURE" <(echo "$file_data"))
+  errors=$(grep -c "^$ERROR" <(echo "$file_data"))
+  seconds=$(grep "^$TEST" <(echo "$file_data") | awk -F '|' '{sum+=$4} END {print sum}')
 
   handle_event "$FILE" "${file_name}|${tests:-0}|${failures:-0}|${errors:-0}|${seconds}"
 }
 
 function summarize_all_files() {
   # todo apply some more awk foo here
-  local sum_data=$(grep "^$FILE" "$test_logfile")
-  local tests=$(awk -F '|' '{sum+=$3} END {print sum}' <(echo "$sum_data"))
-  local failures=$(awk -F '|' '{sum+=$4} END {print sum}' <(echo "$sum_data"))
-  local errors=$(awk -F '|' '{sum+=$5} END {print sum}' <(echo "$sum_data"))
-  local seconds=$(awk -F '|' '{sum+=$6} END {print sum}' <(echo "$sum_data"))
+  local sum_data tests failures errors seconds
+  sum_data=$(grep "^$FILE" "$test_logfile")
+  tests=$(awk -F '|' '{sum+=$3} END {print sum}' <(echo "$sum_data"))
+  failures=$(awk -F '|' '{sum+=$4} END {print sum}' <(echo "$sum_data"))
+  errors=$(awk -F '|' '{sum+=$5} END {print sum}' <(echo "$sum_data"))
+  seconds=$(awk -F '|' '{sum+=$6} END {print sum}' <(echo "$sum_data"))
 
   handle_event "$SUMMARY" "${tests}|${failures}|${errors}|${seconds}"
   echo $(( errors + failures ))
@@ -133,16 +137,18 @@ function summarize_all_files() {
 
 function assert_equals() { # assert that $1 is equal to $2
   local called_by_line="${BASH_LINENO[0]}"
+  local message
   if [[ ! "$1" == "$2" ]]; then
-    local message=$(overflow_message "$FAILURE" "Expected ${1} but got ${2}")
+    message=$(overflow_message "$FAILURE" "Expected ${1} but got ${2}")
     handle_event "$FAILURE" "$message|$called_by_line"
   fi
 }
 
 function assert_none_empty() { # assert that $1 is not empty or only spaces
   local called_by_line="${BASH_LINENO[0]}"
+  local message
   if [[ -z "${1// }" ]]; then
-    local message=$(overflow_message "$FAILURE" "Value was empty, when expecting nonEmpty")
+    message=$(overflow_message "$FAILURE" "Value was empty, when expecting nonEmpty")
     handle_event "$FAILURE" "$message|$called_by_line"
   fi
 }
@@ -150,8 +156,9 @@ function assert_none_empty() { # assert that $1 is not empty or only spaces
 
 function assert_is_substring_of() { # assert that $1 is a substring of $2
   local called_by_line="${BASH_LINENO[0]}"
+  local message
   if [[ ! "$2" =~ $1 ]]; then
-    local message=$(overflow_message "$FAILURE" "${1} was not a substring of ${2}")
+    message=$(overflow_message "$FAILURE" "${1} was not a substring of ${2}")
     handle_event "$FAILURE" "$message|$called_by_line"
  fi
 }
@@ -184,15 +191,17 @@ function process_helper() {
   # This sucks, but we can't use a subshell
   local test_name=$1
   local tmp_file="/tmp/bauta.$test_name.$RANDOM.tmp"
+  local output
   set -e
   "$test_name" &> "$tmp_file"
   local status=$?
-  local output=$(cat "$tmp_file")
+  output=$(cat "$tmp_file")
   set +e
 
   if [[ "$status" -gt 0 ]]; then
+    local message
     handle_event "$BEGIN" "$test_name"
-    local message=$(overflow_message "$ERROR" "${output}")
+    message=$(overflow_message "$ERROR" "${output}")
     handle_event "$ERROR" "${message}|${status}"
     handle_event "$END" "$test_name"
     summarize_last_test
@@ -202,6 +211,7 @@ function process_helper() {
 
 function process_test() {
     local test_name=$1
+    local message
     handle_event "$BEGIN" "$test_name"
 
     # This variable can't be made local. Find out why
@@ -210,7 +220,7 @@ function process_test() {
     status=$?
 
     if [[ "$status" -gt 0 ]]; then
-      local message=$(overflow_message "$ERROR" "${output}")
+      message=$(overflow_message "$ERROR" "${output}")
       handle_event "$ERROR" "${message}|${status}"
     fi
 
@@ -221,6 +231,7 @@ function process_test() {
 function process_file() {
   # todo sanitycheck the file
   local test_file=$1
+    # shellcheck source=/dev/null
   . "$test_file"
 
   handle_event "$OPEN" "$test_file"
