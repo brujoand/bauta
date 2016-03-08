@@ -1,4 +1,5 @@
 # bauta
+[![Build Status](https://travis-ci.org/brujoand/bauta.svg?branch=master)](https://travis-ci.org/brujoand/bauta)
 
 tl;dr:
 Write functions whose name begin with test_ and are declared as function _test_restofname(). Use bautas assert functions and tell us where your test folder is. Get fancy green and red unit 4 stuff in Bamboo / Jenkins etc..
