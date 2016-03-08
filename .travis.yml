@@ -1,2 +1,2 @@
 language: bash
-script: bash src/main/bash/bauta.bash src/test/bash/
+script: bash bauta.bash -o target/ tests/
