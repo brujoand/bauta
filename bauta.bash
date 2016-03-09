@@ -6,10 +6,6 @@ source "$wd"/helpers/assert.bash
 # shellcheck source=helpers/event.bash
 source "$wd"/helpers/event.bash
 
-######################
-#### Test Running ####
-######################
-
 function bauta_log() {
   if [[ "$show_trace" -eq 1 ]]; then
     handle_event "$TRACE" "${BASH_SOURCE[1]}/${FUNCNAME[1]}|$1"
@@ -74,8 +70,8 @@ function process_test() {
 function process_file() {
   # todo sanitycheck the file
   local test_file=$1
-    # shellcheck source=/dev/null
-  . "$test_file"
+  # shellcheck source=/dev/null
+  source "$test_file"
 
   handle_event "$OPEN" "$test_file"
 
@@ -112,7 +108,7 @@ function process_test_folder() {
 #######################
 
 exec 3>&1 # make stdout avalable to subshells
-target_folder="$(pwd)/test-reports"
+target_folder="$(pwd)/target"
 show_trace=0
 
 function reset_output_dir() {
@@ -141,7 +137,7 @@ while getopts :o:l flag; do
       echo setting trace
       ;;
     o)
-      target_folder=$OPTARG
+      target_folder="${PWD}${OPTARG}"
       echo "setting folder $target_folder"
       ;;
     *)
