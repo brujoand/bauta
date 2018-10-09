@@ -1,7 +1,9 @@
+#!/usr/bin/env bash
+
 function assert_equals() { # assert that $1 is equal to $2
   local called_by_line="${BASH_LINENO[0]}"
   local message
-  if [[ ! "$1" == "$2" ]]; then
+  if [[ "$1" != "$2" ]]; then
     message=$(overflow_message "$FAILURE" "Expected '${1}' but got '${2}'")
     handle_event "$FAILURE" "${message}|${called_by_line}"
   fi

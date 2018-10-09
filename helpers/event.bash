@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 OPEN='open'
 CLOSE='close'
 BEGIN='begin'

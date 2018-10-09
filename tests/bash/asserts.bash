@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function test_that_we_can_match_substring() {
   string="This is a long string"
   substring="string"

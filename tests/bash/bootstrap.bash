@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function setup() {
   myname=brujoand
 }
